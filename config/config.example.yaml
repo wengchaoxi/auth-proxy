@@ -1,0 +1,16 @@
+proxy:
+  host: localhost
+  port: 18000
+  target: http://localhost:8000
+
+auth:
+  token: x
+  oidc:
+    enabled: false
+
+rules:
+  whitelist:
+    - /api/v1/health
+
+  blacklist:
+    - /_

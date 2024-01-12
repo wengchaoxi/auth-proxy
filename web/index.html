@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hello World</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script>
+        function auth() {
+            var params = new URLSearchParams(window.location.search);
+            var from = params.get('from');
+            if (from) {
+                from = encodeURIComponent(from);
+            }
+            $.post({
+                url: "/auth/" + (from ? "?from=" + from : ""),
+                data: {
+                    access_key: $("#access_key").val()
+                },
+                dataType: "json",
+                success: function(data, status_string, xhr) {
+                    if(data == "0"){
+                        alert("auth failure");
+                    }else {
+                        // var redirectUrl = xhr.getResponseHeader("Location");
+                        $(location).attr('href', data);
+                    }
+                },
+            });
+        }
+        $(document).keyup(function(e){
+            var key = e.which;
+            if(key == 13){
+                auth();
+            }
+        });
+    </script>
+    <style>
+        .main {
+            width: 390px;
+            margin: 0 auto;
+            overflow: hidden;
+            padding: 39px;
+            text-align: center;
+        }
+        .from-container {
+            width: 95%;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body onselectstart="return false;">
+    <div class="main">
+        <div class="from-container">
+            <input type="password" class="form-control" placeholder="password" id="access_key">
+        </div>
+        <div class="fixed-bottom" style="margin-bottom:9px">
+            <a target="_blank" href="https://github.com/wengchaoxi/auth-proxy" style="color:rgb(0, 0, 0)">
+                &copy;&nbsp;chaoxiweng
+            </a>
+        </div>
+    </div>
+</body>
+</html>
