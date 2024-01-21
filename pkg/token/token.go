@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wengchaoxi/auth-proxy/crypto"
+	"github.com/wengchaoxi/auth-proxy/pkg/crypto"
 )
 
 type Token struct {
@@ -19,14 +19,14 @@ type TokenManager struct {
 	crypto crypto.Crypto
 }
 
-func NewTokenManager() *TokenManager {
-	c, _ := crypto.NewAESCrypto(&crypto.CryptoOptions{SecretKey: "passphrasewhichneedstobe32bytes!"})
+func NewTokenManager(secretKey string) *TokenManager {
+	c, _ := crypto.NewAESCrypto(&crypto.CryptoOptions{SecretKey: secretKey})
 	return &TokenManager{crypto: c}
 }
 
-func (tm *TokenManager) GenerateToken(id string, expireAt time.Duration) string {
+func (tm *TokenManager) GenerateToken(id string, expiresAt int64) string {
 	// encrypt -> data
-	str := fmt.Sprintf("%s\n%d", id, expireAt)
+	str := fmt.Sprintf("%s\n%d", id, expiresAt)
 	re, _ := tm.crypto.Encrypt(&crypto.CryptoOptions{Data: []byte(str)})
 	return re
 }

@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	ErrSecretKeyFormat   = errors.New("err: the length of the secret key must be 32 bytes.")
-	ErrDecryptDataFormat = errors.New("err: the format of the data to be decrypted is incorrect.")
+	ErrSecretKeyFormat   = errors.New("err: the length of the secret key must be 32 bytes")
+	ErrDecryptDataFormat = errors.New("err: the format of the data to be decrypted is incorrect")
 )
 
 type AESCrypto struct {

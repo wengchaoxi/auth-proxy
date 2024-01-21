@@ -1,24 +1,33 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"log"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
-
-	"github.com/wengchaoxi/auth-proxy/token"
+	"github.com/wengchaoxi/auth-proxy/pkg/token"
+	"github.com/wengchaoxi/auth-proxy/service"
 )
 
-const (
-	RouterGroupAuth = "/auth"
-
-	PROXY_AUTH_TOKEN = "proxy-auth-token"
-	// PROXY_AUTH_ORIGIN_URL = "proxy-auth-origin-url"
+var (
+	HOST            = getEnv("HOST", "localhost")
+	PORT            = getEnv("PORT", "18000")
+	TARGET_URL      = getEnv("TARGET_URL", "https://github.com/wengchaoxi/auth-proxy")
+	ACCESS_KEY      = getEnv("AUTH_ACCESS_KEY", "whoami")
+	AUTH_EXPIRATION = getEnv("AUTH_EXPIRATION", "24h")
+	authExpiration  = func() time.Duration {
+		if d, err := time.ParseDuration(AUTH_EXPIRATION); err == nil {
+			return d
+		}
+		return 24 * time.Hour
+	}()
 )
 
 func getEnv(key, defaultValue string) string {
@@ -28,78 +37,49 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-var (
-	expiresDuration = 1800 * time.Second
-	tokenManager    = token.NewTokenManager()
-
-	HOST       = getEnv("HOST", "localhost")
-	PORT       = getEnv("PORT", "18000")
-	TARGET_URL = getEnv("TARGET_URL", "http://localhost:8000")
-	ACCESS_KEY = getEnv("ACCESS_KEY", "whoami")
-)
-
-func CookieInterrupter() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		cookieToken, _ := c.Cookie(PROXY_AUTH_TOKEN)
-
-		if !tokenManager.IsValidToken(cookieToken) {
-			originalURL := url.QueryEscape(c.Request.URL.String())
-			c.Redirect(http.StatusTemporaryRedirect, RouterGroupAuth+"?from="+originalURL)
-			c.Abort()
-		} else {
-			c.Next()
+func generateSecretKey(x string) string {
+	size := len(x)
+	if size > 0 {
+		for {
+			if len(x) >= 32 {
+				return x[:32]
+			}
+			x += x
 		}
 	}
-}
-
-func AuthInterrupter() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		cookieToken, _ := c.Cookie(PROXY_AUTH_TOKEN)
-		if !tokenManager.IsValidToken(cookieToken) {
-			c.Next()
-		} else {
-			targetUrl, _ := url.Parse(TARGET_URL)
-			proxy := httputil.NewSingleHostReverseProxy(targetUrl)
-			proxy.ServeHTTP(c.Writer, c.Request)
-		}
-	}
+	return "passphrasewhichneedstobe32bytes!"
 }
 
 func main() {
-	r := gin.New()
-	// r.Use(gin.Logger())
-
-	authRouter := r.Group(RouterGroupAuth, AuthInterrupter())
-	{
-		authRouter.GET("/", func(c *gin.Context) {
-			c.File("./web/index.html")
-		})
-		authRouter.POST("/", func(c *gin.Context) {
-			cookieToken, _ := c.Cookie(PROXY_AUTH_TOKEN)
-			ak := c.PostForm("access_key")
-			if ak == ACCESS_KEY || tokenManager.IsValidToken(cookieToken) {
-				c.SetCookie(PROXY_AUTH_TOKEN, tokenManager.GenerateToken("whoami", expiresDuration), int(expiresDuration/time.Second), "/", c.Request.URL.Host, false, true)
-				originalURL := c.Query("from")
-				if originalURL == "" {
-					originalURL = "/"
-				} else {
-					originalURL, _ = url.QueryUnescape(originalURL)
-				}
-				c.JSON(200, originalURL)
-			} else {
-				c.String(200, "0")
-				c.SetCookie(PROXY_AUTH_TOKEN, "x", 0, "/", c.Request.URL.Host, false, true)
-			}
-		})
-	}
-
-	// proxy
-	r.NoRoute(CookieInterrupter(), func(c *gin.Context) {
-		targetUrl, _ := url.Parse(TARGET_URL)
-		proxy := httputil.NewSingleHostReverseProxy(targetUrl)
-		proxy.ServeHTTP(c.Writer, c.Request)
+	app := service.New(&service.ServiceOptions{
+		TargetURL:      TARGET_URL,
+		AccessKey:      ACCESS_KEY,
+		AuthExpiration: authExpiration,
+		TokenManager:   token.NewTokenManager(generateSecretKey(ACCESS_KEY)),
 	})
+	engine := gin.Default()
+	app.Init(engine)
+
+	var err error
+	var wg sync.WaitGroup
 	addr := HOST + ":" + PORT
-	fmt.Printf("Running on http://%s, Proxy to %s \n", addr, TARGET_URL)
-	r.Run(addr)
+	srv := &http.Server{Addr: addr, Handler: engine}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err = srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Panicf("server err: %v\n", err)
+			os.Exit(-1)
+		}
+	}()
+	log.Printf("Running on http://%s, Proxy to %s\n", addr, TARGET_URL)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("server shutdown err: %v\n", err)
+	}
+	wg.Wait()
 }

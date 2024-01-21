@@ -12,7 +12,8 @@ services:
       - HOST=0.0.0.0
       - PORT=18000
       - TARGET_URL=http://whoami:8000
-      - ACCESS_KEY=whoami
+      - AUTH_ACCESS_KEY=whoami
+      - AUTH_EXPIRATION=24h
 
   whoami:
     image: traefik/whoami

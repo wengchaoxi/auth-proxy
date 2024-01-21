@@ -8,10 +8,4 @@ Rename `.env.example` to `.env`
 docker compose build && docker compose up
 ```
 
-or
-
-```bash
-go mod tidy && go run main.go
-```
-
-See: http://localhost:8080
+See: http://localhost:18000

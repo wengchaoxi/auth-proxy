@@ -5,24 +5,30 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Hello World</title>
-    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script>
         function auth() {
+            var AUTH_PROXY_ENDPOINT = "/__auth_proxy__/"
             var params = new URLSearchParams(window.location.search);
             var from = params.get('from');
             if (from) {
                 from = encodeURIComponent(from);
             }
             $.post({
-                url: "/auth/" + (from ? "?from=" + from : ""),
+                url: AUTH_PROXY_ENDPOINT + (from ? "?from=" + from : ""),
                 data: {
                     access_key: $("#access_key").val()
                 },
                 dataType: "json",
                 success: function(data, status_string, xhr) {
                     if(data == "0"){
-                        alert("auth failure");
+                        var input = $("#access_key");
+
+                        input.addClass('is-invalid');
+                        setTimeout(function() {
+                            input.removeClass('is-invalid');
+                        }, 1000);
                     }else {
                         // var redirectUrl = xhr.getResponseHeader("Location");
                         $(location).attr('href', data);
@@ -45,20 +51,24 @@
             padding: 39px;
             text-align: center;
         }
-        .from-container {
-            width: 95%;
-            margin: 0 auto;
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+        .is-invalid {
+            animation: shake 0.5s;
         }
     </style>
 </head>
-<body onselectstart="return false;">
+<body>
     <div class="main">
-        <div class="from-container">
-            <input type="password" class="form-control" placeholder="password" id="access_key">
+        <div style="width: 95%; margin: 0 auto;">
+            <input type="password" class="form-control" placeholder="password" id="access_key" autofocus>
         </div>
         <div class="fixed-bottom" style="margin-bottom:9px">
             <a target="_blank" href="https://github.com/wengchaoxi/auth-proxy" style="color:rgb(0, 0, 0)">
-                &copy;&nbsp;chaoxiweng
+                &copy;&nbsp;Auth Proxy
             </a>
         </div>
     </div>
