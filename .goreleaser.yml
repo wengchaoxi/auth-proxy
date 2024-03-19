@@ -22,28 +22,110 @@ builds:
       - arm
     goarm:
       - 7
-    binary: '{{ .ProjectName }}_v{{ .Version }}'
+    binary: '{{ .ProjectName }}'
 
 archives:
   - format: tar.gz
     name_template: >-
-      {{ .ProjectName }}_
-      v{{.Version}}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else }}{{ .Arch }}{{ end }}
+      {{- .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     format_overrides:
       - goos: windows
         format: zip
     files:
-      - ./web
+      - web
       - LICENSE
 
 changelog:
-  sort: asc
+  sort:
   filters:
     exclude:
       - "^docs:"
       - "^test:"
-      - '^chore:'
+      - "^chore:"
+      - "^build:"
+      - "^build(deps):"
+
+# https://goreleaser.com/cookbooks/multi-platform-docker-images/
+docker_manifests:
+  - name_template: 'wengchaoxi/auth-proxy:{{ .Tag }}'
+    image_templates:
+      - 'wengchaoxi/auth-proxy:{{ .Tag }}-amd64'
+      - 'wengchaoxi/auth-proxy:{{ .Tag }}-arm64'
+      - 'wengchaoxi/auth-proxy:{{ .Tag }}-armv7'
+  - name_template: 'wengchaoxi/auth-proxy:latest'
+    image_templates:
+      - 'wengchaoxi/auth-proxy:latest-amd64'
+      - 'wengchaoxi/auth-proxy:latest-arm64'
+      - 'wengchaoxi/auth-proxy:latest-armv7'
+
+dockers:
+  - use: buildx
+    goos: linux
+    goarch: amd64
+    dockerfile: buildx.Dockerfile
+    image_templates:
+      - 'wengchaoxi/auth-proxy:{{ .Tag }}-amd64'
+      - 'wengchaoxi/auth-proxy:latest-amd64'
+    build_flag_templates:
+      - '--pull'
+      # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+      - '--label=org.opencontainers.image.title={{.ProjectName}}'
+      - '--label=org.opencontainers.image.description=A minimalist reverse proxy service for web service authentication'
+      - '--label=org.opencontainers.image.source={{.GitURL}}'
+      - '--label=org.opencontainers.image.url={{.GitURL}}'
+      - '--label=org.opencontainers.image.documentation={{.GitURL}}'
+      - '--label=org.opencontainers.image.created={{.Date}}'
+      - '--label=org.opencontainers.image.revision={{.FullCommit}}'
+      - '--label=org.opencontainers.image.version={{.Version}}'
+      - '--platform=linux/amd64'
+    extra_files:
+      - web
+      - LICENSE
+
+  - use: buildx
+    goos: linux
+    goarch: arm64
+    dockerfile: buildx.Dockerfile
+    image_templates:
+      - 'wengchaoxi/auth-proxy:{{ .Tag }}-arm64'
+      - 'wengchaoxi/auth-proxy:latest-arm64'
+    build_flag_templates:
+      - '--pull'
+      # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+      - '--label=org.opencontainers.image.title={{.ProjectName}}'
+      - '--label=org.opencontainers.image.description=A minimalist reverse proxy service for web service authentication'
+      - '--label=org.opencontainers.image.source={{.GitURL}}'
+      - '--label=org.opencontainers.image.url={{.GitURL}}'
+      - '--label=org.opencontainers.image.documentation={{.GitURL}}'
+      - '--label=org.opencontainers.image.created={{.Date}}'
+      - '--label=org.opencontainers.image.revision={{.FullCommit}}'
+      - '--label=org.opencontainers.image.version={{.Version}}'
+      - '--platform=linux/arm64'
+    extra_files:
+      - web
+      - LICENSE
+
+  - use: buildx
+    goos: linux
+    goarch: arm
+    goarm: '7'
+    dockerfile: buildx.Dockerfile
+    image_templates:
+      - 'wengchaoxi/auth-proxy:{{ .Tag }}-armv7'
+      - 'wengchaoxi/auth-proxy:latest-armv7'
+    build_flag_templates:
+      - '--pull'
+      # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+      - '--label=org.opencontainers.image.title={{.ProjectName}}'
+      - '--label=org.opencontainers.image.description=A minimalist reverse proxy service for web service authentication'
+      - '--label=org.opencontainers.image.source={{.GitURL}}'
+      - '--label=org.opencontainers.image.url={{.GitURL}}'
+      - '--label=org.opencontainers.image.documentation={{.GitURL}}'
+      - '--label=org.opencontainers.image.created={{.Date}}'
+      - '--label=org.opencontainers.image.revision={{.FullCommit}}'
+      - '--label=org.opencontainers.image.version={{.Version}}'
+      - '--platform=linux/arm/v7'
+    extra_files:
+      - web
+      - LICENSE
