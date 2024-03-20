@@ -34,6 +34,7 @@ archives:
         format: zip
     files:
       - web
+      - .env.example
       - LICENSE
 
 changelog:
