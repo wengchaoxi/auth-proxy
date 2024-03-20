@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	HOST            = getEnv("HOST", "localhost")
+	HOST            = getEnv("HOST", "0.0.0.0")
 	PORT            = getEnv("PORT", "18000")
 	TARGET_URL      = getEnv("TARGET_URL", "https://github.com/wengchaoxi/auth-proxy")
 	ACCESS_KEY      = getEnv("AUTH_ACCESS_KEY", "whoami")
