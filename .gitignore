@@ -16,3 +16,6 @@ go.work
 
 .env
 dist/
+
+.vscode/
+__debug_bin*
