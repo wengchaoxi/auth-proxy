@@ -4,11 +4,9 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	_ "github.com/joho/godotenv/autoload"
 )
 
 const (
@@ -16,17 +14,18 @@ const (
 	// AUTH_PROXY_ORIGIN_URL = "auth-proxy-origin-url"
 )
 
-func (s *Service) authInterrupter() gin.HandlerFunc {
+func (s *Service) authInterceptor() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cookieToken, _ := c.Cookie(AUTH_PROXY_TOKEN_NAME)
 		if !s.opts.TokenManager.IsValidToken(cookieToken) {
-			reqUrl := c.Request.URL.String()
-			if strings.HasPrefix(reqUrl, AUTH_PROXY_ENDPOINT) {
+			reqPath := c.Request.URL.Path
+			if reqPath == AUTH_PROXY_ENDPOINT {
 				c.Next()
 			} else {
 				location := AUTH_PROXY_ENDPOINT
-				if reqUrl != "/" {
-					location = location + "?from=" + url.QueryEscape(reqUrl)
+				reqUrlStr := c.Request.URL.String()
+				if reqUrlStr != "/" {
+					location = location + "?from=" + url.QueryEscape(reqUrlStr)
 				}
 				c.Redirect(http.StatusTemporaryRedirect, location)
 				c.Abort()

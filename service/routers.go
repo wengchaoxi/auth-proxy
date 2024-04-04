@@ -28,10 +28,10 @@ func New(opts *ServiceOptions) *Service {
 }
 
 func (s *Service) Init(engine *gin.Engine) {
-	auth := engine.Group(AUTH_PROXY_ENDPOINT, s.authInterrupter())
+	auth := engine.Group(AUTH_PROXY_ENDPOINT, s.authInterceptor())
 	{
 		auth.Static("/", "./web")
 		auth.POST("/", s.authHandler)
 	}
-	engine.NoRoute(s.authInterrupter(), s.proxyHandler)
+	engine.NoRoute(s.authInterceptor(), s.proxyHandler)
 }
