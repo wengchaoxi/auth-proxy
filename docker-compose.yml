@@ -1,13 +1,10 @@
-version: '3'
-
 services:
-  proxy:
+  auth-proxy:
     build: .
     ports:
       - 18000:18000
     volumes:
       - "./web:/app/web"
-    restart: always
     environment:
       - HOST=0.0.0.0
       - PORT=18000
@@ -21,3 +18,4 @@ services:
       - --port=8000
     ports:
       - "8000:8000"
+    restart: unless-stopped
